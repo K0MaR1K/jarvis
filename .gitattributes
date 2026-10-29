@@ -1,0 +1,9 @@
+# Сборочный скрипт всегда с юниксовыми переводами строк (иначе CI падает)
+gradlew text eol=lf
+*.sh text eol=lf
+
+# Бинарники не перекодировать
+*.jar binary
+*.tflite binary
+*.task binary
+*.png binary

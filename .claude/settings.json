@@ -1,0 +1,30 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "752f1677d2a543b9950dd17790147f23.TGGH9kVaMNSYNL2o",
+    "API_TIMEOUT_MS": "3000000",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5.2",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-5.2",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-5.2",
+    "ANTHROPIC_SMALL_FAST_MODEL": "glm-5.2",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "glm-5.2"
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Read(//c//**)",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "NotebookEdit",
+      "Bash",
+      "PowerShell",
+      "WebFetch",
+      "WebSearch",
+      "mcp__web_reader",
+      "mcp__4_5v_mcp"
+    ]
+  }
+}
