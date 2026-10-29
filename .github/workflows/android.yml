@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# чтобы публиковать APK в Releases
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,6 +29,16 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace --no-daemon
+
+      # Публикация в Releases: APK качается прямой ссылкой без входа
+      - name: Опубликовать APK в Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="build-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" app/build/outputs/apk/debug/app-debug.apk \
+            --title "Сборка #$GITHUB_RUN_NUMBER" --notes "Автосборка Джарвиса" \
+            || gh release upload "$TAG" app/build/outputs/apk/debug/app-debug.apk --clobber
 
       - name: Выложить APK
         uses: actions/upload-artifact@v4

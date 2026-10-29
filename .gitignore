@@ -7,3 +7,8 @@ captures/
 .externalNativeBuild/
 .cxx/
 .DS_Store
+
+# инструменты (ADB и прочее) — не для репозитория
+tools/
+*.apk
+*.zip
