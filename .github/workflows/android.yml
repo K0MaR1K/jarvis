@@ -3,6 +3,13 @@ name: Build APK
 on:
   push:
     branches: [ main ]
+    paths:            # APK пересобираем только когда меняется код приложения
+      - 'app/**'
+      - 'gradle/**'
+      - 'gradlew*'
+      - '*.gradle.kts'
+      - 'settings.gradle.kts'
+      - '.github/workflows/android.yml'
   workflow_dispatch:
 
 # чтобы публиковать APK в Releases
