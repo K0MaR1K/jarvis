@@ -11,8 +11,8 @@ android {
         applicationId = "com.kholmsk.jarvis"
         minSdk = 27          // Honor 10: Android 8.1 из коробки, у нас Android 10 (EMUI 12)
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
     }
 
     buildTypes {
