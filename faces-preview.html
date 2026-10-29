@@ -2,13 +2,12 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Rubik:wght@400;500&display=swap">
 <style>
-  /* План: тёмный экран телефона как фон (осознанный одиночный тёмный мир),
-     кириллическая пара Unbounded (заголовки) + Rubik (текст), циановый акцент семейства Cozmo/Jarvis. */
+  /* План: витрина персонажей на тёмном стенде, светлые карточки сами несут свой фон.
+     Кириллическая пара Unbounded + Rubik, акцент циановый, шортлист — янтарный. */
   :root {
     color-scheme: dark;
     --bg: #05070b;
     --panel: #0b1017;
-    --stage: #020409;
     --line: #1c2632;
     --fg: #e2ecf4;
     --muted: #8fa0af;
@@ -28,9 +27,8 @@
     padding-right: max(16px, env(safe-area-inset-right, 0px));
     padding-block: 28px 40px;
   }
-  .wrap { max-width: 920px; margin: 0 auto; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
 
-  header.page { margin-bottom: 26px; }
   h1 {
     font-family: "Unbounded", "Rubik", system-ui, sans-serif;
     font-weight: 700;
@@ -39,10 +37,45 @@
     text-wrap: balance;
   }
   h1 em { font-style: normal; color: var(--accent); }
-  .sub { color: var(--muted); max-width: 56ch; }
+  .sub { color: var(--muted); max-width: 62ch; }
 
-  .grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
-  @media (min-width: 760px) { .grid { grid-template-columns: 1fr 1fr; } }
+  .counter {
+    margin: 14px 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .counter .n {
+    font-family: "Unbounded", "Rubik", sans-serif;
+    color: var(--sel);
+    font-size: 14px;
+  }
+  .clear {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .clear:hover { color: var(--fg); border-color: var(--accent-dim); }
+
+  h2 {
+    font-family: "Unbounded", "Rubik", sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 30px 0 12px;
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 560px) { .grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 940px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
 
   .card {
     background: var(--panel);
@@ -57,198 +90,447 @@
   .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .stage {
-    background: var(--stage);
-    height: 190px;
+    height: 170px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-bottom: 1px solid var(--line);
     overflow: hidden;
+    position: relative;
   }
+  .stage.dark { background: #020409; }
 
-  .card-body { padding: 14px 18px 18px; }
-  .card-body header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
+  .card-body { padding: 12px 15px 15px; }
+  .card-body header { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
   h3 {
-    font-family: "Unbounded", "Rubik", system-ui, sans-serif;
+    font-family: "Unbounded", "Rubik", sans-serif;
     font-weight: 500;
-    font-size: 16px;
+    font-size: 15px;
     margin: 0;
   }
   .chip {
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted);
     border: 1px solid var(--line);
     border-radius: 999px;
-    padding: 2px 9px;
+    padding: 2px 8px;
+    white-space: nowrap;
   }
   .chip.now { color: var(--accent); border-color: var(--accent-dim); }
   .chip.pick { color: var(--sel); border-color: var(--sel); }
-  .card-body p { margin: 0; color: var(--muted); font-size: 14px; }
+  .card-body p { margin: 0; color: var(--muted); font-size: 13px; }
 
-  /* ---------- общая механика лиц ---------- */
-  .face { display: flex; align-items: center; justify-content: center; gap: 26px; }
-  @keyframes blink {
+  @keyframes blinkY {
     0%, 90%, 100% { transform: scaleY(1); }
-    94%, 96% { transform: scaleY(0.06); }
+    94%, 96% { transform: scaleY(0.08); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* 01 Валл-И: два объектива-бинокля */
+  .f-wall-e { gap: 10px; }
+  .f-wall-e .scope {
+    width: 62px; height: 62px; border-radius: 50%;
+    border: 7px solid #b8a24e;
+    background: radial-gradient(circle at 42% 40%, #4a4010, #171204 70%);
+    position: relative;
+    animation: look-we 5.5s ease-in-out infinite alternate;
+  }
+  .f-wall-e .scope::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 16px; height: 16px; margin: -8px;
+    border-radius: 50%; background: #ffe9a8;
+    box-shadow: 0 0 12px rgba(255,233,168,.9);
+  }
+  .f-wall-e .bar {
+    position: absolute; width: 26px; height: 8px; background: #8d7c3a;
+  }
+  @keyframes look-we {
+    0% { transform: translateY(4px) rotate(-4deg); }
+    100% { transform: translateY(-6px) rotate(5deg); }
+  }
+  .st-we { position: relative; display: flex; align-items: center; }
+
+  /* 02 Р2-Д2: синий объектив */
+  .f-r2 { position: relative; width: 110px; height: 110px; }
+  .f-r2 .rim {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(#d8dde2, #aab3bc, #d8dde2, #b7c0c8, #d8dde2);
+  }
+  .f-r2 .lens {
+    position: absolute; inset: 16px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 38%, #7fd0ff, #1452c9 55%, #071d4e 85%);
+    box-shadow: inset 0 0 18px rgba(0,0,20,.6), 0 0 22px rgba(60,150,255,.35);
+  }
+  .f-r2 .pupil {
+    position: absolute; left: 50%; top: 50%;
+    width: 18px; height: 18px; margin: -9px;
+    border-radius: 50%; background: #04102e;
+    animation: look-r2 6s ease-in-out infinite alternate;
+  }
+  @keyframes look-r2 {
+    0% { transform: translate(-12px, -6px); }
+    100% { transform: translate(13px, 5px); }
+  }
+  .f-r2 .led {
+    position: absolute; right: 6px; top: 14px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #ff5f4d; box-shadow: 0 0 10px rgba(255,95,77,.9);
+    animation: led-blink 1.6s steps(1) infinite;
+  }
+  @keyframes led-blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: .15; } }
+
+  /* 03 Уитли (Portal): сфера с апертурой */
+  .f-wheatley { position: relative; width: 116px; height: 116px; border-radius: 50%;
+    background: radial-gradient(circle at 38% 34%, #dff4ff, #7fc4e8 45%, #2c6f9e 75%, #123a5c);
+    box-shadow: 0 0 30px rgba(120,200,255,.35), inset 0 0 26px rgba(0,30,60,.5);
+  }
+  .f-wheatley .aperture {
+    position: absolute; left: 50%; top: 50%;
+    width: 46px; height: 46px; margin: -23px;
+    border-radius: 50%;
+    background: conic-gradient(#071c30 0 40deg, transparent 40deg 60deg, #071c30 60deg 100deg, transparent 100deg 120deg, #071c30 120deg 160deg, transparent 160deg 180deg, #071c30 180deg 220deg, transparent 220deg 240deg, #071c30 240deg 280deg, transparent 280deg 300deg, #071c30 300deg 340deg, transparent 340deg 360deg);
+    animation: spin 7s linear infinite;
+  }
+  .f-wheatley .aperture::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 14px; height: 14px; margin: -7px; border-radius: 50%;
+    background: #bfe8ff; box-shadow: 0 0 14px rgba(190,232,255,.9);
+  }
+  .f-wheatley .shine {
+    position: absolute; left: 24%; top: 18%;
+    width: 22px; height: 14px; border-radius: 50%;
+    background: rgba(255,255,255,.75); filter: blur(2px);
   }
 
-  /* Козмо */
-  .f-cozmo .eye {
-    width: 52px; height: 64px;
-    border: 3.5px solid var(--accent);
-    border-radius: 13px;
-    box-shadow: 0 0 18px var(--accent-dim), inset 0 0 10px rgba(95,212,255,.15);
-    position: relative;
-    animation: blink 3.7s infinite;
+  /* 04 Баймакс: светлая морда */
+  .f-baymax { background: #f4f6f8; }
+  .f-baymax .eyes { display: flex; gap: 34px; animation: blinkY 4.5s infinite; }
+  .f-baymax .eye {
+    width: 11px; height: 44px; border-radius: 999px;
+    background: #14181d;
+    animation: look-bx 5s ease-in-out infinite alternate;
   }
-  .f-cozmo .eye.r { animation-delay: 0.06s; }
+  @keyframes look-bx {
+    0% { transform: translateY(-5px); }
+    100% { transform: translateY(6px); }
+  }
+
+  /* 05 Терминатор: красный скан */
+  .f-term { flex-direction: column; gap: 26px; display: flex; }
+  .f-term .row { display: flex; gap: 44px; }
+  .f-term .eye {
+    width: 54px; height: 20px; border-radius: 999px;
+    background: linear-gradient(90deg, #57100c, #ff4536 45%, #ffd0c5 50%, #ff4536 55%, #57100c);
+    background-size: 300% 100%;
+    box-shadow: 0 0 18px rgba(255,69,54,.65);
+    animation: term-scan 2.2s linear infinite;
+  }
+  @keyframes term-scan { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+  /* 06 Кот-робот */
+  .f-cat { position: relative; width: 130px; height: 120px; }
+  .f-cat .ear {
+    position: absolute; top: 0; width: 0; height: 0;
+    border-left: 16px solid transparent; border-right: 16px solid transparent;
+    border-bottom: 30px solid #66e2ff;
+  }
+  .f-cat .ear.l { left: 6px; }
+  .f-cat .ear.r { right: 6px; }
+  .f-cat .face {
+    position: absolute; inset: 22px 0 0 0; border-radius: 50%;
+    background: radial-gradient(circle at 50% 30%, #10344a, #071c2c 70%);
+    box-shadow: 0 0 24px rgba(102,226,255,.25);
+  }
+  .f-cat .eye {
+    position: absolute; top: 52px; width: 26px; height: 26px; border-radius: 50%;
+    background: #c9f4ff; box-shadow: 0 0 12px rgba(160,240,255,.8);
+    animation: look-cat 6s ease-in-out infinite alternate;
+  }
+  .f-cat .eye.l { left: 26px; }
+  .f-cat .eye.r { right: 26px; }
+  .f-cat .eye::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 8px; height: 18px; margin: -9px 0 0 -4px;
+    border-radius: 999px; background: #06222f;
+  }
+  @keyframes look-cat {
+    0% { transform: translateX(-5px); }
+    100% { transform: translateX(5px); }
+  }
+  .f-cat .nose {
+    position: absolute; left: 50%; top: 78px; width: 12px; height: 9px; margin-left: -6px;
+    background: #ff9ab0; border-radius: 0 0 999px 999px;
+  }
+  .f-cat .wh { position: absolute; height: 2px; width: 30px; background: #9adcff; opacity: .7; }
+  .f-cat .wh.l1 { left: 2px; top: 76px; transform: rotate(8deg); }
+  .f-cat .wh.l2 { left: 2px; top: 86px; transform: rotate(-6deg); }
+  .f-cat .wh.r1 { right: 2px; top: 76px; transform: rotate(-8deg); }
+  .f-cat .wh.r2 { right: 2px; top: 86px; transform: rotate(6deg); }
+
+  /* 07 Аниме-глаза */
+  .f-anime { gap: 30px; }
+  .f-anime .eye {
+    width: 58px; height: 74px; border-radius: 50% / 46%;
+    background: radial-gradient(circle at 50% 60%, #b06bff 0 38%, #5f2bd9 60%, #2c0f8a 100%);
+    box-shadow: 0 0 22px rgba(150,100,255,.45);
+    position: relative; overflow: hidden;
+    animation: look-an 5s ease-in-out infinite alternate;
+  }
+  @keyframes look-an {
+    0% { transform: translateX(-7px); }
+    100% { transform: translateX(7px); }
+  }
+  .f-anime .eye::before {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 18px; height: 30px; margin: -15px 0 0 -9px; border-radius: 50%;
+    background: #1b0760;
+  }
+  .f-anime .eye::after {
+    content: ""; position: absolute; left: 14px; top: 12px;
+    width: 14px; height: 10px; border-radius: 50%;
+    background: rgba(255,255,255,.95);
+  }
+  .f-anime .lash {
+    position: absolute; width: 40px; height: 8px; top: -6px; left: 8px;
+    border-top: 5px solid #e8dcff; border-radius: 50%;
+  }
+  .f-anime .eye { position: relative; }
+
+  /* 08 Пиксельный робот 8-bit */
+  .f-px { position: relative; width: 77px; height: 49px; }
+  .f-px .px {
+    position: absolute; width: 7px; height: 7px; background: #b7f5ff;
+    box-shadow:
+      14px 0 #b7f5ff, 42px 0 #b7f5bb, 56px 0 #b7f5ff,
+      0 7px #b7f5ff, 14px 7px #b7f5ff, 21px 7px #7ce0ff, 35px 7px #7ce0ff, 42px 7px #b7f5ff, 56px 7px #b7f5ff, 70px 7px #b7f5ff,
+      0 14px #b7f5ff, 14px 14px #7ce0ff, 21px 14px #05202a, 35px 14px #05202a, 42px 14px #7ce0ff, 56px 14px #b7f5ff, 70px 14px #b7f5ff,
+      0 21px #b7f5ff, 14px 21px #7ce0ff, 21px 21px #05202a, 35px 21px #05202a, 42px 21px #7ce0ff, 56px 21px #b7f5ff, 70px 21px #b7f5ff,
+      0 28px #b7f5ff, 14px 28px #b7f5ff, 21px 28px #b7f5ff, 28px 28px #b7f5ff, 35px 28px #b7f5ff, 42px 28px #b7f5ff, 56px 28px #b7f5ff, 70px 28px #b7f5ff,
+      14px 35px #7ce0ff, 21px 35px #05202a, 28px 35px #05202a, 35px 35px #05202a, 42px 35px #7ce0ff, 56px 35px #7ce0ff,
+      21px 42px #b7f5ff, 28px 42px #b7f5ff, 35px 42px #b7f5ff;
+    animation: px-bounce 0.9s steps(2) infinite;
+  }
+  @keyframes px-bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-7px); } }
+  .f-px .scan {
+    position: absolute; left: -10px; right: -10px; height: 3px;
+    background: rgba(120,240,255,.25); animation: scanline 3.4s linear infinite;
+  }
+  @keyframes scanline { 0% { top: -6px; } 100% { top: 60px; } }
+
+  /* 09 Тамагочи-LCD */
+  .f-lcd { background: #9cb06f; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .f-lcd .pet {
+    position: relative; width: 49px; height: 42px;
+    animation: pet-hop 0.8s steps(2) infinite;
+  }
+  .f-lcd .pet .d {
+    position: absolute; width: 7px; height: 7px; background: #26330f;
+    box-shadow:
+      7px 0 #26330f, 35px 0 #26330f,
+      0 7px #26330f, 7px 7px #26330f, 14px 7px #26330f, 21px 7px #26330f, 28px 7px #26330f, 35px 7px #26330f, 42px 7px #26330f,
+      0 14px #26330f, 7px 14px #26330f, 14px 14px #26330f, 21px 14px #26330f, 28px 14px #26330f, 35px 14px #26330f, 42px 14px #26330f,
+      0 21px #26330f, 14px 21px #26330f, 21px 21px #26330f, 35px 21px #26330f, 42px 21px #26330f,
+      7px 28px #26330f, 14px 28px #26330f, 21px 28px #26330f, 28px 28px #26330f, 35px 28px #26330f;
+  }
+  @keyframes pet-hop { 0% { transform: translateY(0); } 100% { transform: translateY(-5px); } }
+  .f-lcd .heart {
+    position: absolute; right: 18px; top: 18px; width: 10px; height: 10px;
+    background: #26330f; clip-path: polygon(50% 100%, 0 40%, 0 10%, 25% 0, 50% 15%, 75% 0, 100% 10%, 100% 40%);
+    animation: led-blink 2s steps(1) infinite;
+  }
+
+  /* 10 Space Invader */
+  .f-inv .inv {
+    position: relative; width: 7px; height: 7px; background: #9dff57;
+    box-shadow:
+      14px 0 #9dff57, 42px 0 #9dff57,
+      21px 7px #9dff57, 35px 7px #9dff57,
+      0 14px #9dff57, 14px 14px #9dff57, 21px 14px #9dff57, 28px 14px #9dff57, 35px 14px #9dff57, 42px 14px #9dff57, 56px 14px #9dff57,
+      0 21px #9dff57, 14px 21px #9dff57, 21px 21px #9dff57, 28px 21px #9dff57, 35px 21px #9dff57, 42px 21px #9dff57, 56px 21px #9dff57,
+      0 28px #9dff57, 56px 28px #9dff57,
+      14px 35px #9dff57, 42px 35px #9dff57;
+    animation: inv-step 0.7s steps(1) infinite alternate;
+  }
+  @keyframes inv-step { 0% { transform: translateX(-4px); } 100% { transform: translateX(4px); } }
+
+  /* 11 Pac-Man призрак */
+  .f-pac .ghost {
+    position: relative; width: 76px; height: 78px;
+    background: #ffb8de;
+    clip-path: polygon(0 100%, 0 45%, 8% 12%, 22% 0, 40% 12%, 50% 0, 62% 12%, 78% 0, 92% 12%, 100% 45%, 100% 100%);
+    animation: pet-hop 0.6s steps(2) infinite;
+  }
+  .f-pac .eye {
+    position: absolute; top: 26px; width: 20px; height: 24px; border-radius: 50%;
+    background: #fff;
+  }
+  .f-pac .eye.l { left: 15px; }
+  .f-pac .eye.r { right: 15px; }
+  .f-pac .eye::after {
+    content: ""; position: absolute; left: 5px; top: 8px;
+    width: 10px; height: 12px; border-radius: 50%; background: #2336c4;
+    animation: look-r2 2.4s ease-in-out infinite alternate;
+  }
+
+  /* 12 Голосовая волна ассистента */
+  .f-wave { gap: 12px; }
+  .f-wave .bar {
+    width: 14px; border-radius: 999px; height: 70px;
+    animation: wave 1.1s ease-in-out infinite;
+  }
+  .f-wave .bar:nth-child(1) { background: #4a9dff; animation-delay: 0s; }
+  .f-wave .bar:nth-child(2) { background: #ff5f8f; animation-delay: .15s; }
+  .f-wave .bar:nth-child(3) { background: #ffd166; animation-delay: .3s; }
+  .f-wave .bar:nth-child(4) { background: #5fd4ff; animation-delay: .45s; }
+  .f-wave .bar:nth-child(5) { background: #9dff57; animation-delay: .6s; }
+  @keyframes wave {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.35); }
+  }
+
+  /* 13 Осциллограф */
+  .f-scope { background: #04140d; width: 100%; height: 100%;
+    background-image: repeating-linear-gradient(0deg, transparent 0 21px, rgba(0,255,150,.07) 21px 22px),
+      repeating-linear-gradient(90deg, transparent 0 21px, rgba(0,255,150,.07) 21px 22px); }
+  .f-scope svg { width: 92%; height: 80%; }
+  .f-scope path {
+    fill: none; stroke: #2dffa3; stroke-width: 2.5;
+    filter: drop-shadow(0 0 6px rgba(45,255,163,.8));
+    stroke-dasharray: 40 640;
+    animation: scope-run 2.6s linear infinite;
+  }
+  @keyframes scope-run { to { stroke-dashoffset: -680; } }
+
+  /* 14 Нейросеть-мозг */
+  .f-net svg { width: 100%; height: 100%; }
+  .f-net line { stroke: rgba(140,120,255,.35); stroke-width: 1.5; }
+  .f-net circle { fill: #a993ff; }
+  .f-net .p1 { animation: nodep 2s ease-in-out infinite; }
+  .f-net .p2 { animation: nodep 2s ease-in-out .4s infinite; }
+  .f-net .p3 { animation: nodep 2s ease-in-out .8s infinite; }
+  .f-net .p4 { animation: nodep 2s ease-in-out 1.2s infinite; }
+  @keyframes nodep {
+    0%, 100% { opacity: .35; }
+    50% { opacity: 1; }
+  }
+
+  /* 15 Арк-реактор */
+  .f-arc { position: relative; width: 130px; height: 130px; }
+  .f-arc .ring {
+    position: absolute; border-radius: 50%;
+    border: 2px solid rgba(120,220,255,.25);
+  }
+  .f-arc .r1 { inset: 0; }
+  .f-arc .r2 { inset: 14px; }
+  .f-arc .r3 { inset: 28px; border-color: rgba(120,220,255,.15); }
+  .f-arc .seg {
+    position: absolute; inset: 7px; border-radius: 50%;
+    background: conic-gradient(rgba(160,230,255,.55) 0 24deg, transparent 24deg 60deg, rgba(160,230,255,.55) 60deg 84deg, transparent 84deg 120deg, rgba(160,230,255,.55) 120deg 144deg, transparent 144deg 180deg, rgba(160,230,255,.55) 180deg 204deg, transparent 204deg 240deg, rgba(160,230,255,.55) 240deg 264deg, transparent 264deg 300deg, rgba(160,230,255,.55) 300deg 324deg, transparent 324deg 360deg);
+    -webkit-mask: radial-gradient(circle, transparent 56%, #000 57%, #000 76%, transparent 77%);
+    mask: radial-gradient(circle, transparent 56%, #000 57%, #000 76%, transparent 77%);
+    animation: spin 9s linear infinite;
+  }
+  .f-arc .tri {
+    position: absolute; left: 50%; top: 50%; width: 44px; height: 40px; margin: -20px 0 0 -22px;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    background: linear-gradient(180deg, #eafaff, #7fd6ff);
+    box-shadow: 0 0 22px rgba(150,230,255,.9);
+    animation: term-glow 2.8s ease-in-out infinite;
+  }
+  @keyframes term-glow {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.5); }
+  }
+
+  /* старые пять: Козмо/ЕВА/HUD/ХЭЛ/ББ-8 (из первой версии) */
+  .f-cozmo { gap: 26px; }
+  .f-cozmo .eye {
+    width: 52px; height: 64px; border: 3.5px solid var(--accent); border-radius: 13px;
+    box-shadow: 0 0 18px var(--accent-dim), inset 0 0 10px rgba(95,212,255,.15);
+    position: relative; animation: blinkY 3.7s infinite;
+  }
+  .f-cozmo .eye.r { animation-delay: .06s; }
   .f-cozmo .pupil {
-    position: absolute; left: 50%; top: 50%;
-    width: 22px; height: 22px;
-    border-radius: 6px;
-    background: #eafaff;
-    box-shadow: 0 0 12px rgba(234,250,255,.8);
+    position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; border-radius: 6px;
+    background: #eafaff; box-shadow: 0 0 12px rgba(234,250,255,.8);
     animation: look-c 6.5s ease-in-out infinite alternate;
   }
   @keyframes look-c {
-    0%   { transform: translate(-22px, -26px); }
-    35%  { transform: translate(6px, -30px); }
-    70%  { transform: translate(20px, -14px); }
+    0% { transform: translate(-22px, -26px); }
+    35% { transform: translate(6px, -30px); }
+    70% { transform: translate(20px, -14px); }
     100% { transform: translate(-8px, -20px); }
   }
-
-  /* ЕВА */
   .f-eve { gap: 18px; }
   .f-eve .eye {
-    width: 34px; height: 78px;
-    border-radius: 999px;
+    width: 34px; height: 78px; border-radius: 999px;
     background: linear-gradient(180deg, #f4fcff, #b9e6ff);
     box-shadow: 0 0 26px rgba(150,220,255,.45);
-    position: relative;
-    animation: blink 4.3s infinite;
+    position: relative; animation: blinkY 4.3s infinite;
   }
-  .f-eve .eye.r { animation-delay: 0.05s; }
   .f-eve .lens {
-    position: absolute; left: 50%; top: 50%;
-    width: 14px; height: 44px;
-    border-radius: 999px;
-    background: #47b6f0;
-    box-shadow: 0 0 10px rgba(71,182,240,.9);
+    position: absolute; left: 50%; top: 50%; width: 14px; height: 44px; border-radius: 999px;
+    background: #47b6f0; box-shadow: 0 0 10px rgba(71,182,240,.9);
     animation: look-e 5.2s ease-in-out infinite alternate;
   }
   @keyframes look-e {
-    0%   { transform: translate(-7px, -14px); }
-    50%  { transform: translate(1px, -20px); }
+    0% { transform: translate(-7px, -14px); }
+    50% { transform: translate(1px, -20px); }
     100% { transform: translate(7px, -8px); }
   }
-
-  /* ДЖАРВИС HUD */
-  .f-hud { position: relative; width: 170px; height: 170px; }
-  .f-hud .ring, .f-hud .ring2, .f-hud .orbit {
-    position: absolute; inset: 0; border-radius: 50%;
-  }
-  .f-hud .ring {
-    border: 2px solid rgba(95,212,255,.14);
-    box-shadow: inset 0 0 24px rgba(95,212,255,.08);
-  }
+  .f-hud { position: relative; width: 150px; height: 150px; }
+  .f-hud .ring, .f-hud .ring2, .f-hud .orbit { position: absolute; border-radius: 50%; }
+  .f-hud .ring { inset: 0; border: 2px solid rgba(95,212,255,.14); box-shadow: inset 0 0 24px rgba(95,212,255,.08); }
   .f-hud .ring2 {
-    inset: 22px;
-    border: 2px solid transparent;
-    border-top-color: var(--accent);
-    border-left-color: rgba(95,212,255,.35);
-    animation: spin 4.5s linear infinite;
+    inset: 22px; border: 2px solid transparent; border-top-color: var(--accent);
+    border-left-color: rgba(95,212,255,.35); animation: spin 4.5s linear infinite;
   }
-  .f-hud .orbit {
-    inset: 6px;
-    border-top: 2px solid #eafaff;
-    animation: spin 9s linear infinite reverse;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .f-hud .orbit { inset: 6px; border-top: 2px solid #eafaff; animation: spin 9s linear infinite reverse; }
   .f-hud .core {
-    position: absolute; left: 50%; top: 50%;
-    width: 26px; height: 26px; margin: -13px;
-    border-radius: 50%;
-    background: radial-gradient(circle, #ffffff, #9fe2ff 60%, transparent 75%);
-    box-shadow: 0 0 22px rgba(160,230,255,.8);
-    animation: pulse 2.4s ease-in-out infinite;
+    position: absolute; left: 50%; top: 50%; width: 24px; height: 24px; margin: -12px;
+    border-radius: 50%; background: radial-gradient(circle, #ffffff, #9fe2ff 60%, transparent 75%);
+    box-shadow: 0 0 22px rgba(160,230,255,.8); animation: term-glow 2.4s ease-in-out infinite;
   }
-  @keyframes pulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(0.82); opacity: 0.75; }
-  }
-
-  /* ХЭЛ */
-  .f-hal { position: relative; width: 110px; height: 110px; }
+  .f-hal { position: relative; width: 104px; height: 104px; }
   .f-hal .lens {
     position: absolute; inset: 0; border-radius: 50%;
     border: 3px solid #6e1616;
     background: radial-gradient(circle at 50% 46%, #1c0404 0 52%, #5c0f0f 60%, #2a0606 68%, #120202 76%);
-    box-shadow: 0 0 30px rgba(255,60,40,.18);
-    animation: hal-breath 5s ease-in-out infinite;
+    box-shadow: 0 0 30px rgba(255,60,40,.18); animation: hal-b 5s ease-in-out infinite;
   }
-  .f-hal .core {
-    position: absolute; left: 50%; top: 50%;
-    width: 20px; height: 20px; margin: -10px;
-    border-radius: 50%;
-    background: radial-gradient(circle, #ffd9d4, #ff4b3a 55%, #7e0f06 90%);
-    box-shadow: 0 0 24px rgba(255,75,58,.85);
-    animation: hal-core 3.2s ease-in-out infinite;
-  }
-  @keyframes hal-breath {
+  @keyframes hal-b {
     0%, 100% { box-shadow: 0 0 26px rgba(255,60,40,.15); }
     50% { box-shadow: 0 0 40px rgba(255,60,40,.35); }
   }
-  @keyframes hal-core {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(0.86); }
+  .f-hal .core {
+    position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px;
+    border-radius: 50%; background: radial-gradient(circle, #ffd9d4, #ff4b3a 55%, #7e0f06 90%);
+    box-shadow: 0 0 24px rgba(255,75,58,.85); animation: look-r2 3.2s ease-in-out infinite alternate;
   }
-
-  /* БИ-БИ 8 */
-  .f-bb8 { position: relative; width: 110px; height: 110px; }
+  .f-bb8 { position: relative; width: 104px; height: 104px; }
   .f-bb8 .outer {
     position: absolute; inset: 0; border-radius: 50%;
-    border: 3px solid #c9d1d9;
-    box-shadow: 0 0 16px rgba(200,212,222,.2);
+    border: 3px solid #c9d1d9; box-shadow: 0 0 16px rgba(200,212,222,.2);
   }
   .f-bb8 .bolt {
-    position: absolute; right: 8px; top: 12px;
-    width: 9px; height: 9px; border-radius: 50%;
+    position: absolute; right: 8px; top: 12px; width: 9px; height: 9px; border-radius: 50%;
     background: #ff9a3c; box-shadow: 0 0 8px rgba(255,154,60,.7);
   }
   .f-bb8 .inner {
-    position: absolute; left: 50%; top: 50%;
-    width: 56px; height: 56px; margin: -28px;
-    border-radius: 50%;
-    border: 2.5px solid #98a3ad;
+    position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px;
+    border-radius: 50%; border: 2.5px solid #98a3ad;
   }
   .f-bb8 .pupil {
-    position: absolute; left: 50%; top: 50%;
-    width: 18px; height: 18px; margin: -9px;
-    border-radius: 50%;
-    background: #dfe6ec;
-    box-shadow: 0 0 12px rgba(223,230,236,.8);
-    animation: look-b 7s ease-in-out infinite;
-  }
-  @keyframes look-b {
-    0%   { transform: translate(-12px, -8px); }
-    30%  { transform: translate(10px, -12px); }
-    60%  { transform: translate(14px, 10px); }
-    100% { transform: translate(-12px, -8px); }
+    position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px;
+    border-radius: 50%; background: #dfe6ec; box-shadow: 0 0 12px rgba(223,230,236,.8);
+    animation: look-c 7s ease-in-out infinite;
   }
 
   footer.note {
-    margin-top: 24px;
-    color: var(--muted);
-    font-size: 13px;
-    border-top: 1px solid var(--line);
-    padding-top: 16px;
+    margin-top: 26px; color: var(--muted); font-size: 13px;
+    border-top: 1px solid var(--line); padding-top: 16px;
   }
   footer.note b { color: var(--fg); font-weight: 500; }
 
@@ -258,102 +540,231 @@
 </style>
 
 <div class="wrap">
-  <header class="page">
-    <h1>Мордочки <em>Джарвиса</em></h1>
-    <p class="sub">Пять лиц для экрана на стене. Все нарисованы кодом — никаких картинок, поэтому в приложении они точно такие же: моргают, следят за тобой и засыпают. Тапни по карточке, чтобы отметить любимую.</p>
+  <header>
+    <h1>Мордочки <em>Джарвиса</em> · том 2</h1>
+    <p class="sub">Двадцать лиц, и теперь не только на чёрном: светлые, цветные и пиксельные тоже могут — батарейки-то не будет. Тапни по карточкам всё, что нравится, — соберётся шортлист, и я зашью выбранные в приложение.</p>
+    <div class="counter">
+      <span class="n" id="cnt">В шортлисте: 0</span>
+      <button class="clear" id="clr" type="button">очистить</button>
+    </div>
   </header>
 
+  <h2>Из кино и игр</h2>
+  <div class="grid">
+    <article class="card" data-face="wall-e" tabindex="0">
+      <div class="stage dark"><div class="st-we"><div class="f-wall-e face">
+        <div class="scope"></div><div class="bar"></div><div class="scope"></div>
+      </div></div></div>
+      <div class="card-body"><header><h3>Валл-И</h3><span class="chip">WALL-E</span></header>
+      <p>Два объектива-бинокля в жёлтой оправе. Трудяга с большим сердцем.</p></div>
+    </article>
+
+    <article class="card" data-face="r2" tabindex="0">
+      <div class="stage dark"><div class="f-r2"><div class="rim"></div><div class="lens"></div><div class="pupil"></div><div class="led"></div></div></div>
+      <div class="card-body"><header><h3>Р2-Д2</h3><span class="chip">Звёздные войны</span></header>
+      <p>Синий объектив с мигающим огоньком. Своенравный гений-помощник.</p></div>
+    </article>
+
+    <article class="card" data-face="wheatley" tabindex="0">
+      <div class="stage dark"><div class="f-wheatley"><div class="aperture"></div><div class="shine"></div></div></div>
+      <div class="card-body"><header><h3>Уитли</h3><span class="chip">Portal</span></header>
+      <p>Голубая сфера с вращающейся апертурой. Болтун, но обаяшка.</p></div>
+    </article>
+
+    <article class="card" data-face="baymax" tabindex="0">
+      <div class="stage"><div class="f-baymax face"><div class="eyes"><div class="eye"></div><div class="eye"></div></div></div></div>
+      <div class="card-body"><header><h3>Баймакс</h3><span class="chip">светлый фон</span></header>
+      <p>Белая морда с двумя линиями-глазами. Медбрат-балагур, детям и жёнам — восторг.</p></div>
+    </article>
+
+    <article class="card" data-face="term" tabindex="0">
+      <div class="stage dark"><div class="f-term face"><div class="row"><div class="eye"></div><div class="eye"></div></div><div class="row"><div class="eye"></div><div class="eye"></div></div></div></div>
+      <div class="card-body"><header><h3>Терминатор</h3><span class="chip">сканер</span></header>
+      <p>Красные глаза с бегущим бликом, как кадр из финала первого фильма. Брутально.</p></div>
+    </article>
+  </div>
+
+  <h2>Милота</h2>
+  <div class="grid">
+    <article class="card" data-face="cat" tabindex="0">
+      <div class="stage dark"><div class="f-cat">
+        <div class="ear l"></div><div class="ear r"></div><div class="face"></div>
+        <div class="eye l"></div><div class="eye r"></div><div class="nose"></div>
+        <div class="wh l1"></div><div class="wh l2"></div><div class="wh r1"></div><div class="wh r2"></div>
+      </div></div>
+      <div class="card-body"><header><h3>Кот-робот</h3><span class="chip">ночной</span></header>
+      <p>Неоновая кошачья морда с вертикальными зрачками и усами. Мурчит по-технологичному.</p></div>
+    </article>
+
+    <article class="card" data-face="anime" tabindex="0">
+      <div class="stage dark"><div class="f-anime face">
+        <div class="eye"><div class="lash"></div></div>
+        <div class="eye"><div class="lash"></div></div>
+      </div></div>
+      <div class="card-body"><header><h3>Аниме</h3><span class="chip">кавай</span></header>
+      <p>Большие фиолетовые глаза с бликами и ресничками. Максимум эмоций.</p></div>
+    </article>
+
+    <article class="card" data-face="wave" tabindex="0">
+      <div class="stage dark"><div class="f-wave face">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      </div></div>
+      <div class="card-body"><header><h3>Голос-волна</h3><span class="chip">стиль ассистента</span></header>
+      <p>Цветные столбики танцуют, как у голосовых помощников. Идеально ляжет на этап 2.</p></div>
+    </article>
+  </div>
+
+  <h2>Ретро и игры</h2>
+  <div class="grid">
+    <article class="card" data-face="px" tabindex="0">
+      <div class="stage dark"><div class="f-px"><div class="px"></div><div class="scan"></div></div></div>
+      <div class="card-body"><header><h3>8-бит робот</h3><span class="chip">CRT</span></header>
+      <p>Пиксельная морда со строчкой развёртки. Дух аркадных автоматов.</p></div>
+    </article>
+
+    <article class="card" data-face="lcd" tabindex="0">
+      <div class="stage"><div class="f-lcd"><div class="pet"><div class="d"></div></div><div class="heart"></div></div></div>
+      <div class="card-body"><header><h3>Тамагочи</h3><span class="chip">светлый LCD</span></header>
+      <p>Оливковый экран и прыгающий пиксельный питомец. Ностальгия в чистом виде.</p></div>
+    </article>
+
+    <article class="card" data-face="inv" tabindex="0">
+      <div class="stage dark"><div class="f-inv face"><div class="inv"></div></div></div>
+      <div class="card-body"><header><h3>Инвейдер</h3><span class="chip">аркада</span></header>
+      <p>Зелёный пиксельный пришелец, степенно под шагающий влево-вправо.</p></div>
+    </article>
+
+    <article class="card" data-face="pac" tabindex="0">
+      <div class="stage dark"><div class="f-pac face"><div class="ghost"><div class="eye l"></div><div class="eye r"></div></div></div></div>
+      <div class="card-body"><header><h3>Пак-призрак</h3><span class="chip">аркада</span></header>
+      <p>Розовый призрак из Pac-Man с бегающими глазками. Просто и весело.</p></div>
+    </article>
+  </div>
+
+  <h2>Стиль лаборатории</h2>
+  <div class="grid">
+    <article class="card" data-face="scope" tabindex="0">
+      <div class="stage"><div class="f-scope">
+        <svg viewBox="0 0 300 100" preserveAspectRatio="none">
+          <path d="M0,50 C20,10 40,10 60,50 S100,90 120,50 S160,10 180,50 S220,90 240,50 S280,10 300,50" />
+        </svg>
+      </div></div>
+      <div class="card-body"><header><h3>Осциллограф</h3><span class="chip">безумный учёный</span></header>
+      <p>Бирюзовая волна бежит по сетке прибора. Голос будет рисовать настоящую волну речи.</p></div>
+    </article>
+
+    <article class="card" data-face="net" tabindex="0">
+      <div class="stage dark"><div class="f-net">
+        <svg viewBox="0 0 200 120">
+          <line x1="30" y1="30" x2="100" y2="60"/><line x1="30" y1="90" x2="100" y2="60"/>
+          <line x1="100" y1="20" x2="100" y2="60"/><line x1="170" y1="30" x2="100" y2="60"/>
+          <line x1="170" y1="95" x2="100" y2="60"/><line x1="100" y1="60" x2="100" y2="105"/>
+          <line x1="30" y1="30" x2="100" y2="20"/><line x1="170" y1="30" x2="100" y2="20"/>
+          <circle class="p1" cx="30" cy="30" r="7"/><circle class="p2" cx="100" cy="20" r="7"/>
+          <circle class="p3" cx="170" cy="30" r="7"/><circle class="p1" cx="30" cy="90" r="7"/>
+          <circle class="p2" cx="100" cy="60" r="9"/><circle class="p3" cx="170" cy="95" r="7"/>
+          <circle class="p4" cx="100" cy="105" r="7"/>
+        </svg>
+      </div></div>
+      <div class="card-body"><header><h3>Нейросеть</h3><span class="chip">это literally ты</span></header>
+      <p>Узлы-синапсы пульсируют связями. Джарвис показывает, о чём думает.</p></div>
+    </article>
+
+    <article class="card" data-face="arc" tabindex="0">
+      <div class="stage dark"><div class="f-arc">
+        <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>
+        <div class="seg"></div><div class="tri"></div>
+      </div></div>
+      <div class="card-body"><header><h3>Арк-реактор</h3><span class="chip">Железный человек</span></header>
+      <p>Кольца с сегментами и светящееся ядро-треугольник. Вечный источник энергии.</p></div>
+    </article>
+  </div>
+
+  <h2>Классика проекта</h2>
   <div class="grid">
     <article class="card" data-face="cozmo" tabindex="0">
-      <div class="stage"><div class="face f-cozmo">
+      <div class="stage dark"><div class="f-cozmo face">
         <div class="eye l"><div class="pupil"></div></div>
         <div class="eye r"><div class="pupil"></div></div>
       </div></div>
-      <div class="card-body">
-        <header><h3>Козмо</h3><span class="chip now">текущая</span></header>
-        <p>Скруглённые квадраты с шустрыми зрачками. Оригинал проекта: живой, любопытный, чуть озорной.</p>
-      </div>
+      <div class="card-body"><header><h3>Козмо</h3><span class="chip now">текущая</span></header>
+      <p>Скруглённые квадраты с шустрыми зрачками. Оригинал проекта.</p></div>
     </article>
 
     <article class="card" data-face="eve" tabindex="0">
-      <div class="stage"><div class="face f-eve">
+      <div class="stage dark"><div class="f-eve face">
         <div class="eye l"><div class="lens"></div></div>
         <div class="eye r"><div class="lens"></div></div>
       </div></div>
-      <div class="card-body">
-        <header><h3>ЕВА</h3><span class="chip">WALL-E</span></header>
-        <p>Вытянутые капсулы ледяного света. Чистая, спокойная, слегка снисходительная. Жене зайдёт.</p>
-      </div>
+      <div class="card-body"><header><h3>ЕВА</h3><span class="chip">WALL-E</span></header>
+      <p>Капсулы ледяного света. Чистая и спокойная.</p></div>
     </article>
 
     <article class="card" data-face="hud" tabindex="0">
-      <div class="stage"><div class="f-hud">
-        <div class="ring"></div>
-        <div class="ring2"></div>
-        <div class="orbit"></div>
-        <div class="core"></div>
+      <div class="stage dark"><div class="f-hud">
+        <div class="ring"></div><div class="ring2"></div><div class="orbit"></div><div class="core"></div>
       </div></div>
-      <div class="card-body">
-        <header><h3>HUD Джарвиса</h3><span class="chip">в теме имени</span></header>
-        <p>Голограммные кольца со сканером из «Железного человека». Дворецкий как он есть: сэр, сканирую.</p>
-      </div>
+      <div class="card-body"><header><h3>HUD Джарвиса</h3><span class="chip">в теме имени</span></header>
+      <p>Голограммные кольца со сканером. Дворецкий как он есть.</p></div>
     </article>
 
     <article class="card" data-face="hal" tabindex="0">
-      <div class="stage"><div class="f-hal">
-        <div class="lens"></div>
-        <div class="core"></div>
-      </div></div>
-      <div class="card-body">
-        <header><h3>ХЭЛ</h3><span class="chip">Космическая одиссея</span></header>
-        <p>Один красный глаз. Минимализм и лёгкая угроза: «Извини, Игорь, я не могу этого сделать».</p>
-      </div>
+      <div class="stage dark"><div class="f-hal"><div class="lens"></div><div class="core"></div></div></div>
+      <div class="card-body"><header><h3>ХЭЛ</h3><span class="chip">Космическая одиссея</span></header>
+      <p>Один красный глаз. Минимализм и лёгкая угроза.</p></div>
     </article>
 
     <article class="card" data-face="bb8" tabindex="0">
-      <div class="stage"><div class="f-bb8">
-        <div class="outer"></div>
-        <div class="bolt"></div>
-        <div class="inner"></div>
-        <div class="pupil"></div>
+      <div class="stage dark"><div class="f-bb8">
+        <div class="outer"></div><div class="bolt"></div><div class="inner"></div><div class="pupil"></div>
       </div></div>
-      <div class="card-body">
-        <header><h3>Би-Би 8</h3><span class="chip">Звёздные войны</span></header>
-        <p>Один круглый объектив с серебряным зрачком. Милый, доверчивый, смотрит вечно заинтересованно.</p>
-      </div>
+      <div class="card-body"><header><h3>Би-Би 8</h3><span class="chip">Звёздные войны</span></header>
+      <p>Круглый объектив с серебряным зрачком. Милый и доверчивый.</p></div>
     </article>
   </div>
 
   <footer class="note">
-    <b>Как это будет в приложении:</b> свайп влево-вправо по экрану — смена мордочки на следующую, выбор запоминается сам. Тап — отладочная строка (fps, видит ли камера лицо и руку). Все мордочки пользуются одними мозгами: слежение, моргание, сон и пробуждение.
+    <b>Как читать каталог:</b> все мордочки нарисованы кодом, без картинок — в приложении будут такими же живыми: моргают, следят за тобой камерой, засыпают без людей. Светлые фоны теперь не проблема: батарейки не будет. Отметь тапом всё, что понравилось, — я зашью выбранные стили в приложение вместе с их родными фонами.
   </footer>
 </div>
 
 <script>
-  var KEY = "jarvis-face-pick";
+  var KEY = "jarvis-face-shortlist";
   var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
-  function pick(name) {
+  var cnt = document.getElementById("cnt");
+  function shortlist() {
+    try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { return []; }
+  }
+  function save(list) {
+    try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {}
+  }
+  function render() {
+    var list = shortlist();
     cards.forEach(function (c) {
-      var on = c.dataset.face === name;
+      var on = list.indexOf(c.dataset.face) >= 0;
       c.classList.toggle("selected", on);
       var chip = c.querySelector(".pick");
       if (on && !chip) {
         chip = document.createElement("span");
         chip.className = "chip pick";
-        chip.textContent = "моя любимая";
+        chip.textContent = "в шортлисте";
         c.querySelector("header").appendChild(chip);
       } else if (!on && chip) { chip.remove(); }
     });
-    try { localStorage.setItem(KEY, name); } catch (e) {}
+    cnt.textContent = "В шортлисте: " + list.length;
   }
   cards.forEach(function (c) {
-    c.addEventListener("click", function () { pick(c.dataset.face); });
+    function toggle() {
+      var list = shortlist();
+      var i = list.indexOf(c.dataset.face);
+      if (i >= 0) list.splice(i, 1); else list.push(c.dataset.face);
+      save(list); render();
+    }
+    c.addEventListener("click", toggle);
     c.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(c.dataset.face); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
     });
   });
-  try {
-    var saved = localStorage.getItem(KEY);
-    if (saved) pick(saved);
-  } catch (e) {}
+  document.getElementById("clr").addEventListener("click", function () { save([]); render(); });
+  render();
 </script>
