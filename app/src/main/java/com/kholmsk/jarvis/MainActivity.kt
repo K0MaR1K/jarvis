@@ -42,8 +42,7 @@ class MainActivity : ComponentActivity() {
 
         faceView = JarvisFaceView(this)
         setContentView(faceView)
-        // тап по экрану — включить/выключить отладочную подпись
-        faceView.setOnClickListener { faceView.toggleDebug() }
+        // жесты (свайп — сменить мордочку, тап — отладка) обрабатываются внутри view
 
         // полноэкранный режим, без статус-бара и кнопок
         WindowCompat.setDecorFitsSystemWindows(window, false)

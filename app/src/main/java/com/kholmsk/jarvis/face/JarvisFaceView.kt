@@ -6,20 +6,33 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.os.SystemClock
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.view.View
 import com.kholmsk.jarvis.vision.VisionAnalyzer.VisionResult
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.exp
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * Лицо Джарвиса: два глаза в стиле Anki Cozmo на чёрном фоне.
- * Моргает, следит за человеком (руки — приоритетнее), осматривается, когда скучно,
- * и засыпает, если никого нет 30 секунд. Тап — отладочная подпись.
+ * Лицо Джарвиса. Пять стилей на выбор (свайп влево/вправо — сменить):
+ * Козмо, ЕВА, HUD, ХЭЛ, Би-Би 8. Общие мозги для всех: моргание,
+ * слежение за человеком (руки приоритетнее), осматривание, сон и пробуждение.
+ * Тап — отладочная строка. Выбор мордочки запоминается.
  */
 class JarvisFaceView(context: Context) : View(context) {
+
+    enum class FaceStyle(val title: String) {
+        COZMO("Козмо"),
+        EVE("ЕВА"),
+        HUD("ДЖАРВИС"),
+        HAL("ХЭЛ"),
+        BB8("Би-Би 8")
+    }
 
     // -------- ввод от камеры (приходит из фонового потока) --------
     @Volatile private var vision: VisionResult? = null
@@ -37,6 +50,41 @@ class JarvisFaceView(context: Context) : View(context) {
 
     fun toggleDebug() {
         debugOverlay = !debugOverlay
+    }
+
+    // -------- выбор мордочки --------
+    private val prefs = context.getSharedPreferences("jarvis_face", Context.MODE_PRIVATE)
+    private var style =
+        FaceStyle.entries[prefs.getInt(KEY_STYLE, 0).coerceIn(0, FaceStyle.entries.lastIndex)]
+    private var styleLabelUntilMs = 0L
+
+    private fun setStyle(s: FaceStyle) {
+        style = s
+        prefs.edit().putInt(KEY_STYLE, s.ordinal).apply()
+        styleLabelUntilMs = SystemClock.uptimeMillis() + 1600L
+    }
+
+    // -------- жесты: свайп = смена мордочки, тап = отладка --------
+    private val gestures = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+        override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
+            if (abs(vx) > abs(vy) * 1.5f && abs(vx) > 500f) {
+                val dir = if (vx < 0) 1 else -1
+                val idx = (style.ordinal + dir + FaceStyle.entries.size) % FaceStyle.entries.size
+                setStyle(FaceStyle.entries[idx])
+                return true
+            }
+            return false
+        }
+
+        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+            toggleDebug()
+            return true
+        }
+    })
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        gestures.onTouchEvent(event)
+        return true
     }
 
     // -------- состояние --------
@@ -58,20 +106,20 @@ class JarvisFaceView(context: Context) : View(context) {
     private var nextBlinkAtMs = 1500L
     private var blinksLeft = 0          // иногда двойное — так живее
 
-    // геометрия глаз, пересчитывается при изменении размера экрана
+    // геометрия, пересчитывается при изменении размера экрана
     private var eyeW = 0f
     private var eyeH = 0f
     private var eyeGap = 0f
     private var eyeCy = 0f
     private var pupilSize = 0f
 
-    private val eyePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-    private val pupilPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.parseColor("#88FFFFFF")
     }
     private val eyeRect = RectF()
-    private val pupilRect = RectF()
+    private val arcRect = RectF()
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
@@ -82,7 +130,6 @@ class JarvisFaceView(context: Context) : View(context) {
         eyeGap = fw * 0.16f
         eyeCy = fh * 0.36f
         pupilSize = eyeW * 0.55f
-        eyePaint.strokeWidth = eyeW * 0.09f
         textPaint.textSize = fh * 0.016f
         // мягкое свечение требует программный слой отрисовки
         setLayerType(LAYER_TYPE_SOFTWARE, null)
@@ -160,51 +207,202 @@ class JarvisFaceView(context: Context) : View(context) {
         update(nowMs, dtMs)
 
         val sleeping = state == State.SLEEPING
-        val sleepDepth = if (sleeping) ((nowMs - sleepStartMs) / 900f).coerceIn(0f, 1f) else 0f
-        val openness = blinkOpenness(nowMs) * (1f - 0.78f * sleepDepth)
+        val dim = if (sleeping) ((nowMs - sleepStartMs) / 900f).coerceIn(0f, 1f) else 0f
+        val openness = blinkOpenness(nowMs) * (1f - 0.78f * dim)
         val breathe = 1f + 0.02f * sin(nowMs / 1400f) // едва заметное «дыхание»
         val gx = gazeX
-        val gy = gazeY + 0.35f * sleepDepth           // во сне взгляд утыкается вниз
+        val gy = gazeY + 0.35f * dim                 // во сне взгляд утыкается вниз
 
-        val eyeColor = if (sleeping) EYE_SLEEP else EYE_AWAKE
-        val pupilColor = if (sleeping) PUPIL_SLEEP else PUPIL_AWAKE
-        eyePaint.color = eyeColor
-        eyePaint.setShadowLayer(eyeW * 0.15f, 0f, 0f, eyeColor)
-        pupilPaint.color = pupilColor
-        pupilPaint.setShadowLayer(pupilSize * 0.16f, 0f, 0f, pupilColor)
+        when (style) {
+            FaceStyle.COZMO -> drawCozmo(canvas, gx, gy, openness * breathe, dim)
+            FaceStyle.EVE -> drawEve(canvas, gx, gy, openness * breathe, dim)
+            FaceStyle.HUD -> drawHud(canvas, nowMs, gx, gy, dim, breathe)
+            FaceStyle.HAL -> drawHal(canvas, gx, gy, openness * breathe, dim)
+            FaceStyle.BB8 -> drawBb8(canvas, gx, gy, openness * breathe, dim)
+        }
 
-        val half = eyeGap / 2f + eyeW / 2f
-        drawEye(canvas, width / 2f - half, openness * breathe, gx, gy)
-        drawEye(canvas, width / 2f + half, openness * breathe, gx, gy)
-
+        if (styleLabelUntilMs > nowMs) drawStyleLabel(canvas)
         if (debugOverlay) drawDebug(canvas)
         postInvalidateOnAnimation() // следующий кадр анимации
     }
 
-    private fun drawEye(canvas: Canvas, cx: Float, openScale: Float, gx: Float, gy: Float) {
+    private fun alphaFor(dim: Float): Int = (255f * (1f - 0.55f * dim)).toInt().coerceIn(0, 255)
+
+    /** Стиль «Козмо»: два скруглённых прямоугольника со квадратными зрачками. */
+    private fun drawCozmo(canvas: Canvas, gx: Float, gy: Float, openScale: Float, dim: Float) {
+        strokePaint.strokeWidth = eyeW * 0.09f
+        strokePaint.color = COZMO_EYE
+        strokePaint.alpha = alphaFor(dim)
+        strokePaint.setShadowLayer(eyeW * 0.15f, 0f, 0f, COZMO_EYE)
+        fillPaint.color = COZMO_PUPIL
+        fillPaint.alpha = alphaFor(dim)
+        fillPaint.setShadowLayer(pupilSize * 0.16f, 0f, 0f, COZMO_PUPIL)
+
+        val half = eyeGap / 2f + eyeW / 2f
+        drawCozmoEye(canvas, width / 2f - half, gx, gy, openScale)
+        drawCozmoEye(canvas, width / 2f + half, gx, gy, openScale)
+    }
+
+    private fun drawCozmoEye(canvas: Canvas, cx: Float, gx: Float, gy: Float, openScale: Float) {
         val h = eyeH * openScale
         if (h < 2f) return
         eyeRect.set(cx - eyeW / 2f, eyeCy - h / 2f, cx + eyeW / 2f, eyeCy + h / 2f)
         val r = min(eyeW * 0.35f, h / 2f)
-        canvas.drawRoundRect(eyeRect, r, r, eyePaint)
+        canvas.drawRoundRect(eyeRect, r, r, strokePaint)
 
         // зрачок скользит внутри глаза, не выходя за контур
         val ph = pupilSize * openScale
         if (ph < 1f) return
-        val margin = eyePaint.strokeWidth * 0.7f
+        val margin = strokePaint.strokeWidth * 0.7f
         val maxX = (eyeRect.width() - pupilSize) / 2f - margin
         val maxY = (h - ph) / 2f - margin
         val px = eyeRect.centerX() + gx * maxX.coerceAtLeast(0f)
         val py = eyeRect.centerY() + gy * maxY.coerceAtLeast(0f)
-        pupilRect.set(px - pupilSize / 2f, py - ph / 2f, px + pupilSize / 2f, py + ph / 2f)
-        val pr = min(pupilSize * 0.35f, ph / 2f)
-        canvas.drawRoundRect(pupilRect, pr, pr, pupilPaint)
+        pupilRectSet(px, py, pupilSize, ph)
+        canvas.drawRoundRect(eyeRect, min(pupilSize * 0.35f, ph / 2f), min(pupilSize * 0.35f, ph / 2f), fillPaint)
+    }
+
+    /** Стиль «ЕВА»: две вытянутые капсулы, взгляд ездит внутренней линзой. */
+    private fun drawEve(canvas: Canvas, gx: Float, gy: Float, openScale: Float, dim: Float) {
+        val w = eyeW * 0.62f
+        val h = eyeH * 1.5f * openScale
+        if (h < 4f) return
+        val half = eyeGap * 0.75f / 2f + w / 2f
+
+        for (side in intArrayOf(-1, 1)) {
+            val cx = width / 2f + side * half
+            fillPaint.color = EVE_OUTER
+            fillPaint.alpha = alphaFor(dim)
+            fillPaint.setShadowLayer(w * 0.5f, 0f, 0f, EVE_GLOW)
+            eyeRect.set(cx - w / 2f, eyeCy - h / 2f, cx + w / 2f, eyeCy + h / 2f)
+            canvas.drawRoundRect(eyeRect, w / 2f, w / 2f, fillPaint)
+
+            // внутренняя линза — тёмно-голубая, смещается по взгляду
+            val lw = w * 0.42f
+            val lh = h * 0.55f
+            val lx = cx + gx * (w - lw) / 2f * 0.8f
+            val ly = eyeCy + gy * (h - lh) / 2f * 0.8f
+            fillPaint.color = EVE_INNER
+            fillPaint.alpha = alphaFor(dim)
+            fillPaint.setShadowLayer(lw * 0.8f, 0f, 0f, EVE_INNER)
+            eyeRect.set(lx - lw / 2f, ly - lh / 2f, lx + lw / 2f, ly + lh / 2f)
+            canvas.drawRoundRect(eyeRect, lw / 2f, lw / 2f, fillPaint)
+        }
+    }
+
+    /** Стиль «HUD Джарвиса»: вращающиеся кольца, ядро и сканер-точка. */
+    private fun drawHud(canvas: Canvas, nowMs: Long, gx: Float, gy: Float, dim: Float, breathe: Float) {
+        val c = width / 2f
+        val cy = eyeCy
+        val R = eyeH * 1.05f * breathe
+        val spin = nowMs / 1000f * (1f - dim * 0.85f)
+
+        // бледное статичное кольцо-основа
+        strokePaint.strokeWidth = eyeW * 0.02f
+        strokePaint.color = HUD_ARC
+        strokePaint.alpha = (alphaFor(dim) * 0.25f).toInt()
+        strokePaint.setShadowLayer(0f, 0f, 0f, 0)
+        canvas.drawCircle(c, cy, R, strokePaint)
+
+        // внешняя дуга (со свечением), крутится в одну сторону
+        strokePaint.strokeWidth = eyeW * 0.045f
+        strokePaint.alpha = alphaFor(dim)
+        strokePaint.setShadowLayer(eyeW * 0.12f, 0f, 0f, HUD_ARC)
+        arcRect.set(c - R, cy - R, c + R, cy + R)
+        canvas.drawArc(arcRect, spin * 40f % 360f, 90f, false, strokePaint)
+
+        // внутренняя дуга — в другую, потише
+        val r2 = R * 0.72f
+        strokePaint.strokeWidth = eyeW * 0.03f
+        strokePaint.alpha = (alphaFor(dim) * 0.8f).toInt()
+        strokePaint.setShadowLayer(0f, 0f, 0f, 0)
+        arcRect.set(c - r2, cy - r2, c + r2, cy + r2)
+        canvas.drawArc(arcRect, -spin * 70f % 360f, 200f, false, strokePaint)
+
+        // ядро «дышит»
+        val coreR = eyeW * 0.16f * (1f + 0.06f * sin(nowMs / 500f))
+        fillPaint.color = HUD_CORE
+        fillPaint.alpha = alphaFor(dim)
+        fillPaint.setShadowLayer(coreR * 1.4f, 0f, 0f, HUD_CORE)
+        canvas.drawCircle(c, cy, coreR, fillPaint)
+
+        // сканер-точка на внутреннем кольце, уезжает к взгляду
+        fillPaint.color = HUD_ARC
+        fillPaint.setShadowLayer(eyeW * 0.1f, 0f, 0f, HUD_ARC)
+        canvas.drawCircle(c + gx * r2 * 0.85f, cy + gy * r2 * 0.85f, eyeW * 0.05f, fillPaint)
+    }
+
+    /** Стиль «ХЭЛ»: один красный глаз, моргает «веком» (сжатием). */
+    private fun drawHal(canvas: Canvas, gx: Float, gy: Float, openScale: Float, dim: Float) {
+        val c = width / 2f
+        val R = eyeH * 0.55f
+        canvas.save()
+        canvas.scale(1f, max(openScale, 0.05f), c, eyeCy)
+
+        fillPaint.color = HAL_DARK
+        fillPaint.alpha = 255
+        fillPaint.setShadowLayer(0f, 0f, 0f, 0)
+        canvas.drawCircle(c, eyeCy, R, fillPaint)
+
+        strokePaint.strokeWidth = eyeW * 0.06f
+        strokePaint.color = HAL_RING
+        strokePaint.alpha = alphaFor(dim)
+        strokePaint.setShadowLayer(eyeW * 0.2f, 0f, 0f, HAL_RING)
+        canvas.drawCircle(c, eyeCy, R, strokePaint)
+
+        fillPaint.color = HAL_CORE
+        fillPaint.alpha = alphaFor(dim)
+        fillPaint.setShadowLayer(R * 0.5f, 0f, 0f, HAL_CORE)
+        canvas.drawCircle(c + gx * R * 0.35f, eyeCy + gy * R * 0.35f, R * 0.28f, fillPaint)
+        canvas.restore()
+    }
+
+    /** Стиль «Би-Би 8»: круглый объектив с гуляющим серебряным зрачком. */
+    private fun drawBb8(canvas: Canvas, gx: Float, gy: Float, openScale: Float, dim: Float) {
+        val c = width / 2f
+        val R = eyeH * 0.55f
+        canvas.save()
+        canvas.scale(1f, max(openScale, 0.05f), c, eyeCy)
+
+        strokePaint.strokeWidth = eyeW * 0.055f
+        strokePaint.color = BB_RING
+        strokePaint.alpha = alphaFor(dim)
+        strokePaint.setShadowLayer(eyeW * 0.1f, 0f, 0f, BB_RING)
+        canvas.drawCircle(c, eyeCy, R, strokePaint)
+
+        strokePaint.strokeWidth = eyeW * 0.04f
+        strokePaint.alpha = (alphaFor(dim) * 0.8f).toInt()
+        strokePaint.setShadowLayer(0f, 0f, 0f, 0)
+        canvas.drawCircle(c, eyeCy, R * 0.55f, strokePaint)
+
+        val mr = R * 0.55f
+        fillPaint.color = BB_PUPIL
+        fillPaint.alpha = alphaFor(dim)
+        fillPaint.setShadowLayer(mr * 0.5f, 0f, 0f, BB_PUPIL)
+        canvas.drawCircle(c + gx * mr * 0.55f, eyeCy + gy * mr * 0.55f, R * 0.18f, fillPaint)
+
+        fillPaint.color = BB_ACCENT
+        fillPaint.alpha = alphaFor(dim)
+        fillPaint.setShadowLayer(R * 0.15f, 0f, 0f, BB_ACCENT)
+        canvas.drawCircle(c + R * 0.72f, eyeCy - R * 0.72f, R * 0.09f, fillPaint)
+        canvas.restore()
+    }
+
+    private fun pupilRectSet(px: Float, py: Float, pw: Float, ph: Float) {
+        eyeRect.set(px - pw / 2f, py - ph / 2f, px + pw / 2f, py + ph / 2f)
+    }
+
+    private fun drawStyleLabel(canvas: Canvas) {
+        textPaint.textAlign = Paint.Align.CENTER
+        canvas.drawText(style.title, width / 2f, height * 0.9f, textPaint)
+        textPaint.textAlign = Paint.Align.LEFT
     }
 
     private fun drawDebug(canvas: Canvas) {
         val v = vision
         val lines = listOf(
-            "ДЖАРВИС v0.1 · " + if (state == State.SLEEPING) "спит" else "бодрствует",
+            "ДЖАРВИС v0.2 · ${style.title} · " +
+                if (state == State.SLEEPING) "спит" else "бодрствует",
             "камера " + (v?.fps?.toInt() ?: 0) + " fps · лицо: " +
                 (if (v?.facePresent == true) "да" else "нет") +
                 " · рука: " + (if (v?.handPresent == true) "да" else "нет"),
@@ -220,9 +418,19 @@ class JarvisFaceView(context: Context) : View(context) {
     companion object {
         private const val BLINK_MS = 130L
         private const val SLEEP_AFTER_MS = 30_000L
-        private val EYE_AWAKE = Color.parseColor("#5FD4FF")
-        private val EYE_SLEEP = Color.parseColor("#27596E")
-        private val PUPIL_AWAKE = Color.parseColor("#EAFAFF")
-        private val PUPIL_SLEEP = Color.parseColor("#8FB8CC")
+        private const val KEY_STYLE = "style_index"
+        private val COZMO_EYE = Color.parseColor("#5FD4FF")
+        private val COZMO_PUPIL = Color.parseColor("#EAFAFF")
+        private val EVE_OUTER = Color.parseColor("#D9F2FF")
+        private val EVE_INNER = Color.parseColor("#47B6F0")
+        private val EVE_GLOW = Color.parseColor("#9CD8FF")
+        private val HUD_ARC = Color.parseColor("#5FD4FF")
+        private val HUD_CORE = Color.parseColor("#EAFAFF")
+        private val HAL_RING = Color.parseColor("#E23B2E")
+        private val HAL_CORE = Color.parseColor("#FF6B5A")
+        private val HAL_DARK = Color.parseColor("#1A0404")
+        private val BB_RING = Color.parseColor("#C9D1D9")
+        private val BB_PUPIL = Color.parseColor("#DFE6EC")
+        private val BB_ACCENT = Color.parseColor("#FF9A3C")
     }
 }

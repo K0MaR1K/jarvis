@@ -1,0 +1,359 @@
+<title>Мордочки Джарвиса</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Rubik:wght@400;500&display=swap">
+<style>
+  /* План: тёмный экран телефона как фон (осознанный одиночный тёмный мир),
+     кириллическая пара Unbounded (заголовки) + Rubik (текст), циановый акцент семейства Cozmo/Jarvis. */
+  :root {
+    color-scheme: dark;
+    --bg: #05070b;
+    --panel: #0b1017;
+    --stage: #020409;
+    --line: #1c2632;
+    --fg: #e2ecf4;
+    --muted: #8fa0af;
+    --accent: #5fd4ff;
+    --accent-dim: rgba(95, 212, 255, 0.35);
+    --sel: #ffd166;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Rubik", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 28px 40px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+
+  header.page { margin-bottom: 26px; }
+  h1 {
+    font-family: "Unbounded", "Rubik", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: clamp(22px, 5vw, 34px);
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  .sub { color: var(--muted); max-width: 56ch; }
+
+  .grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
+  @media (min-width: 760px) { .grid { grid-template-columns: 1fr 1fr; } }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .card:hover, .card:focus-visible { border-color: var(--accent-dim); }
+  .card.selected { border-color: var(--sel); box-shadow: 0 0 0 1px var(--sel) inset; }
+  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stage {
+    background: var(--stage);
+    height: 190px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+  }
+
+  .card-body { padding: 14px 18px 18px; }
+  .card-body header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  h3 {
+    font-family: "Unbounded", "Rubik", system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    margin: 0;
+  }
+  .chip {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 2px 9px;
+  }
+  .chip.now { color: var(--accent); border-color: var(--accent-dim); }
+  .chip.pick { color: var(--sel); border-color: var(--sel); }
+  .card-body p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  /* ---------- общая механика лиц ---------- */
+  .face { display: flex; align-items: center; justify-content: center; gap: 26px; }
+  @keyframes blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    94%, 96% { transform: scaleY(0.06); }
+  }
+
+  /* Козмо */
+  .f-cozmo .eye {
+    width: 52px; height: 64px;
+    border: 3.5px solid var(--accent);
+    border-radius: 13px;
+    box-shadow: 0 0 18px var(--accent-dim), inset 0 0 10px rgba(95,212,255,.15);
+    position: relative;
+    animation: blink 3.7s infinite;
+  }
+  .f-cozmo .eye.r { animation-delay: 0.06s; }
+  .f-cozmo .pupil {
+    position: absolute; left: 50%; top: 50%;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: #eafaff;
+    box-shadow: 0 0 12px rgba(234,250,255,.8);
+    animation: look-c 6.5s ease-in-out infinite alternate;
+  }
+  @keyframes look-c {
+    0%   { transform: translate(-22px, -26px); }
+    35%  { transform: translate(6px, -30px); }
+    70%  { transform: translate(20px, -14px); }
+    100% { transform: translate(-8px, -20px); }
+  }
+
+  /* ЕВА */
+  .f-eve { gap: 18px; }
+  .f-eve .eye {
+    width: 34px; height: 78px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #f4fcff, #b9e6ff);
+    box-shadow: 0 0 26px rgba(150,220,255,.45);
+    position: relative;
+    animation: blink 4.3s infinite;
+  }
+  .f-eve .eye.r { animation-delay: 0.05s; }
+  .f-eve .lens {
+    position: absolute; left: 50%; top: 50%;
+    width: 14px; height: 44px;
+    border-radius: 999px;
+    background: #47b6f0;
+    box-shadow: 0 0 10px rgba(71,182,240,.9);
+    animation: look-e 5.2s ease-in-out infinite alternate;
+  }
+  @keyframes look-e {
+    0%   { transform: translate(-7px, -14px); }
+    50%  { transform: translate(1px, -20px); }
+    100% { transform: translate(7px, -8px); }
+  }
+
+  /* ДЖАРВИС HUD */
+  .f-hud { position: relative; width: 170px; height: 170px; }
+  .f-hud .ring, .f-hud .ring2, .f-hud .orbit {
+    position: absolute; inset: 0; border-radius: 50%;
+  }
+  .f-hud .ring {
+    border: 2px solid rgba(95,212,255,.14);
+    box-shadow: inset 0 0 24px rgba(95,212,255,.08);
+  }
+  .f-hud .ring2 {
+    inset: 22px;
+    border: 2px solid transparent;
+    border-top-color: var(--accent);
+    border-left-color: rgba(95,212,255,.35);
+    animation: spin 4.5s linear infinite;
+  }
+  .f-hud .orbit {
+    inset: 6px;
+    border-top: 2px solid #eafaff;
+    animation: spin 9s linear infinite reverse;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .f-hud .core {
+    position: absolute; left: 50%; top: 50%;
+    width: 26px; height: 26px; margin: -13px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffffff, #9fe2ff 60%, transparent 75%);
+    box-shadow: 0 0 22px rgba(160,230,255,.8);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.82); opacity: 0.75; }
+  }
+
+  /* ХЭЛ */
+  .f-hal { position: relative; width: 110px; height: 110px; }
+  .f-hal .lens {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 3px solid #6e1616;
+    background: radial-gradient(circle at 50% 46%, #1c0404 0 52%, #5c0f0f 60%, #2a0606 68%, #120202 76%);
+    box-shadow: 0 0 30px rgba(255,60,40,.18);
+    animation: hal-breath 5s ease-in-out infinite;
+  }
+  .f-hal .core {
+    position: absolute; left: 50%; top: 50%;
+    width: 20px; height: 20px; margin: -10px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffd9d4, #ff4b3a 55%, #7e0f06 90%);
+    box-shadow: 0 0 24px rgba(255,75,58,.85);
+    animation: hal-core 3.2s ease-in-out infinite;
+  }
+  @keyframes hal-breath {
+    0%, 100% { box-shadow: 0 0 26px rgba(255,60,40,.15); }
+    50% { box-shadow: 0 0 40px rgba(255,60,40,.35); }
+  }
+  @keyframes hal-core {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(0.86); }
+  }
+
+  /* БИ-БИ 8 */
+  .f-bb8 { position: relative; width: 110px; height: 110px; }
+  .f-bb8 .outer {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 3px solid #c9d1d9;
+    box-shadow: 0 0 16px rgba(200,212,222,.2);
+  }
+  .f-bb8 .bolt {
+    position: absolute; right: 8px; top: 12px;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #ff9a3c; box-shadow: 0 0 8px rgba(255,154,60,.7);
+  }
+  .f-bb8 .inner {
+    position: absolute; left: 50%; top: 50%;
+    width: 56px; height: 56px; margin: -28px;
+    border-radius: 50%;
+    border: 2.5px solid #98a3ad;
+  }
+  .f-bb8 .pupil {
+    position: absolute; left: 50%; top: 50%;
+    width: 18px; height: 18px; margin: -9px;
+    border-radius: 50%;
+    background: #dfe6ec;
+    box-shadow: 0 0 12px rgba(223,230,236,.8);
+    animation: look-b 7s ease-in-out infinite;
+  }
+  @keyframes look-b {
+    0%   { transform: translate(-12px, -8px); }
+    30%  { transform: translate(10px, -12px); }
+    60%  { transform: translate(14px, 10px); }
+    100% { transform: translate(-12px, -8px); }
+  }
+
+  footer.note {
+    margin-top: 24px;
+    color: var(--muted);
+    font-size: 13px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+  footer.note b { color: var(--fg); font-weight: 500; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="page">
+    <h1>Мордочки <em>Джарвиса</em></h1>
+    <p class="sub">Пять лиц для экрана на стене. Все нарисованы кодом — никаких картинок, поэтому в приложении они точно такие же: моргают, следят за тобой и засыпают. Тапни по карточке, чтобы отметить любимую.</p>
+  </header>
+
+  <div class="grid">
+    <article class="card" data-face="cozmo" tabindex="0">
+      <div class="stage"><div class="face f-cozmo">
+        <div class="eye l"><div class="pupil"></div></div>
+        <div class="eye r"><div class="pupil"></div></div>
+      </div></div>
+      <div class="card-body">
+        <header><h3>Козмо</h3><span class="chip now">текущая</span></header>
+        <p>Скруглённые квадраты с шустрыми зрачками. Оригинал проекта: живой, любопытный, чуть озорной.</p>
+      </div>
+    </article>
+
+    <article class="card" data-face="eve" tabindex="0">
+      <div class="stage"><div class="face f-eve">
+        <div class="eye l"><div class="lens"></div></div>
+        <div class="eye r"><div class="lens"></div></div>
+      </div></div>
+      <div class="card-body">
+        <header><h3>ЕВА</h3><span class="chip">WALL-E</span></header>
+        <p>Вытянутые капсулы ледяного света. Чистая, спокойная, слегка снисходительная. Жене зайдёт.</p>
+      </div>
+    </article>
+
+    <article class="card" data-face="hud" tabindex="0">
+      <div class="stage"><div class="f-hud">
+        <div class="ring"></div>
+        <div class="ring2"></div>
+        <div class="orbit"></div>
+        <div class="core"></div>
+      </div></div>
+      <div class="card-body">
+        <header><h3>HUD Джарвиса</h3><span class="chip">в теме имени</span></header>
+        <p>Голограммные кольца со сканером из «Железного человека». Дворецкий как он есть: сэр, сканирую.</p>
+      </div>
+    </article>
+
+    <article class="card" data-face="hal" tabindex="0">
+      <div class="stage"><div class="f-hal">
+        <div class="lens"></div>
+        <div class="core"></div>
+      </div></div>
+      <div class="card-body">
+        <header><h3>ХЭЛ</h3><span class="chip">Космическая одиссея</span></header>
+        <p>Один красный глаз. Минимализм и лёгкая угроза: «Извини, Игорь, я не могу этого сделать».</p>
+      </div>
+    </article>
+
+    <article class="card" data-face="bb8" tabindex="0">
+      <div class="stage"><div class="f-bb8">
+        <div class="outer"></div>
+        <div class="bolt"></div>
+        <div class="inner"></div>
+        <div class="pupil"></div>
+      </div></div>
+      <div class="card-body">
+        <header><h3>Би-Би 8</h3><span class="chip">Звёздные войны</span></header>
+        <p>Один круглый объектив с серебряным зрачком. Милый, доверчивый, смотрит вечно заинтересованно.</p>
+      </div>
+    </article>
+  </div>
+
+  <footer class="note">
+    <b>Как это будет в приложении:</b> свайп влево-вправо по экрану — смена мордочки на следующую, выбор запоминается сам. Тап — отладочная строка (fps, видит ли камера лицо и руку). Все мордочки пользуются одними мозгами: слежение, моргание, сон и пробуждение.
+  </footer>
+</div>
+
+<script>
+  var KEY = "jarvis-face-pick";
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
+  function pick(name) {
+    cards.forEach(function (c) {
+      var on = c.dataset.face === name;
+      c.classList.toggle("selected", on);
+      var chip = c.querySelector(".pick");
+      if (on && !chip) {
+        chip = document.createElement("span");
+        chip.className = "chip pick";
+        chip.textContent = "моя любимая";
+        c.querySelector("header").appendChild(chip);
+      } else if (!on && chip) { chip.remove(); }
+    });
+    try { localStorage.setItem(KEY, name); } catch (e) {}
+  }
+  cards.forEach(function (c) {
+    c.addEventListener("click", function () { pick(c.dataset.face); });
+    c.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(c.dataset.face); }
+    });
+  });
+  try {
+    var saved = localStorage.getItem(KEY);
+    if (saved) pick(saved);
+  } catch (e) {}
+</script>
